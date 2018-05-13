@@ -24,7 +24,8 @@ public class UserController {
             User user = new Gson().fromJson(request.body(), User.class);
             boolean validated = userService.validatePassword(user.getUser_name(), user.getPassword_hash());
             if (!validated) {
-                throw new UnauthorizedException(user.getUser_name());
+                response.status(401);
+                response.body("{\"message\":\"Unauthorized\"}");
             }
             String token = userService.getEncryptedBody(user.getUser_name()).concat(".").concat(userService.encriptHMAC(user.getUser_name()));
             response.body("{\"token\": \"" + token + "\"}");
@@ -46,6 +47,37 @@ public class UserController {
                 response.body("{\"message\":\"User is not authorized to buy" + validated + " items\"}");
            }
            return true;
+        });
+
+        post("/convert_get_token", (request, response) -> {
+            User user = new Gson().fromJson(request.body(), User.class);
+            boolean validated = userService.validatePassword(user.getUser_name(), user.getPassword_hash());
+            if (!validated) {
+                throw new UnauthorizedException(user.getUser_name());
+            }
+            String token = userService.getEnclosedUserName(user.getUser_name()).concat(".").concat(userService.encriptHMAC(user.getUser_name()));
+            response.body("{\"token\": \"" + token + "\"}");
+            return true;
+        });
+
+        post("/convert", (request, response) -> {
+            String token = request.headers("token");
+            String body = request.body();
+            boolean validateContentType = request.contentType().equals("application/xml");
+
+            if (validateContentType) {
+                if (userService.validateConversionToken(token)) {
+                    response.status(200);
+                    response.body(userService.xmlToJson(body));
+                } else {
+                    response.status(401);
+                    response.body("{\"message\":\"Unauthorized\"}");
+                }
+            } else {
+                response.status(406);
+                response.body("{\"message\":\"Content type is not accepted\"}");
+            }
+            return true;
         });
 
         exception(UnauthorizedException.class, (exception, request, response)  -> {

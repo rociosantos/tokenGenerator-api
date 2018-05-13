@@ -7,7 +7,9 @@ import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import com.sun.org.apache.xerces.internal.impl.dv.util.HexBin;
 import entities.User;
+import org.json.JSONException;
 import org.json.simple.JSONObject;
+import org.json.XML;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -22,6 +24,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class UserServices {
+    public static int PRETTY_PRINT_INDENT_FACTOR = 4;
+    public static String TEST_XML_STRING =
+            "<?xml version=\"1.0\" ?><test attrib=\"moretest\">Turn this to JSON</test>";
+
     //read json file
     private static List<User> readUserFile() throws FileNotFoundException{
         JsonElement usersJson = new JsonParser().parse(new FileReader("src/main/resources/users.json"));
@@ -43,6 +49,7 @@ public class UserServices {
         byte[] hash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
         String encoded = Base64.getEncoder().encodeToString(hash);
         User user = findUser(userName);
+        System.out.println(encoded);
         return encoded.equals(user.getPassword_hash());
     }
 
@@ -68,8 +75,12 @@ public class UserServices {
 
     }
 
+    public String getEnclosedUserName(String userName){
+        return Base64.getEncoder().encodeToString(userName.getBytes(StandardCharsets.UTF_8));
+    }
+
     //encrypts with HMAC the body plus the secret
-    public static String encriptHMAC(String userName) throws FileNotFoundException, NoSuchAlgorithmException {
+    public String encriptHMAC(String userName) throws FileNotFoundException, NoSuchAlgorithmException {
         String key = getEncryptedBody(userName).concat(findUser(userName).getSecret());
         try {
             Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
@@ -89,7 +100,7 @@ public class UserServices {
     }
 
     //validates the token received from header
-    public static boolean validateTokenForBuy(String[] encryptedItems, JsonObject decryptedBody) throws FileNotFoundException, NoSuchAlgorithmException {
+    public boolean validateTokenForBuy(String[] encryptedItems, JsonObject decryptedBody) throws FileNotFoundException, NoSuchAlgorithmException {
 
         String userName = decryptedBody.get("user_name").getAsString();
         String encodedSecret = encryptedItems[1];
@@ -98,12 +109,12 @@ public class UserServices {
     }
 
     //compares the HMAC encrypted received with the existent
-    public static boolean validateEncryptedSecret(String encodedSecret, String userName) throws FileNotFoundException, NoSuchAlgorithmException {
+    public boolean validateEncryptedSecret(String encodedSecret, String userName) throws FileNotFoundException, NoSuchAlgorithmException {
         return encodedSecret.equals(encriptHMAC(userName));
     }
 
     //verifies the user is allowed for complete the buy
-    public static String validateBuy(String token, JsonObject body) throws FileNotFoundException, NoSuchAlgorithmException {
+    public String validateBuy(String token, JsonObject body) throws FileNotFoundException, NoSuchAlgorithmException {
         String[] encryptedItems = token.split("\\.");
         JsonObject decryptedBody = decodeBody(encryptedItems[0]);
 
@@ -144,9 +155,39 @@ public class UserServices {
         return itemsCannotBuy;
     }
 
+    //get JsonObject from encoded Body
     public static JsonObject decodeBody(String encryptedBody){
         byte[] decoded = Base64.getDecoder().decode(encryptedBody);
         JsonObject body = new JsonParser().parse(new String(decoded)).getAsJsonObject();
         return body;
     }
+
+    //gets UserName from token encoded user name
+    public static String decodeUserName(String encodedUserName){
+        byte[] decoded = Base64.getDecoder().decode(encodedUserName);
+        String userName = (new String(decoded));
+        return userName;
+    }
+
+    //validates conversion token, which is formed by userName.encryptedHMAC
+    public boolean validateConversionToken(String token) throws FileNotFoundException, NoSuchAlgorithmException {
+        String[] encryptedItems = token.split("\\.");
+        String userName = decodeUserName(encryptedItems[0]);
+
+        String encodedSecret = encryptedItems[1];
+
+        return validateEncryptedSecret(encodedSecret, userName) ;
+    }
+
+    //converts xml body to Json
+    public static String xmlToJson(String xml){
+        try {
+            org.json.JSONObject xmlJSONObj = XML.toJSONObject(xml);
+            String jsonPrettyPrintString = xmlJSONObj.toString(PRETTY_PRINT_INDENT_FACTOR);
+            return jsonPrettyPrintString;
+        } catch (JSONException je) {
+            return "Error converting xml";
+        }
+    }
+
 }
