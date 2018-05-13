@@ -1,0 +1,20 @@
+{
+  "users": [
+    {
+      "user_name": "john doe",
+      "password_hash": "7NcYcNGWMxapfjrDQIyYNa2M8PPBvHA1J8MCZVNPda4=",
+      "milk": true,
+      "bread": false,
+      "butter": true,
+      "secret": "santos21"
+    },
+    {
+      "user_name": "susan doe",
+      "password_hash": "test456",
+      "milk": true,
+      "bread": false,
+      "butter": true,
+      "secret": "vazquez21"
+    }
+]
+}
