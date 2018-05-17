@@ -1,7 +1,5 @@
 package entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 public class User {
     @Override
     public String toString() {
@@ -19,17 +17,6 @@ public class User {
     public boolean milk;
     public boolean bread;
     public boolean butter;
-
-    public String getSecret() {
-        return secret;
-    }
-
-    public void setSecret(String secret) {
-        this.secret = secret;
-    }
-
-    @JsonIgnore
-    public String secret;
 
     public String getUser_name() {
         return user_name;

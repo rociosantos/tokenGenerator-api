@@ -1,20 +1,20 @@
 {
   "users": [
     {
-      "user_name": "john doe",
+      "user_name": "johnDoe",
       "password_hash": "7NcYcNGWMxapfjrDQIyYNa2M8PPBvHA1J8MCZVNPda4=",
       "milk": true,
       "bread": false,
-      "butter": true,
-      "secret": "santos21"
+      "butter": true
+//      "secret": "santos21"
     },
     {
-      "user_name": "susan doe",
+      "user_name": "susanDoe",
       "password_hash": "UOSe/eTjfYS5exSsT30DupVvFBP3NnCQuuq6xnv2lwQ=",
       "milk": true,
       "bread": false,
-      "butter": true,
-      "secret": "vazquez21"
+      "butter": true
+//      "secret": "vazquez21"
     }
 ]
 }

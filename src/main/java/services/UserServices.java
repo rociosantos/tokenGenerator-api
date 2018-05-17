@@ -1,26 +1,25 @@
 package services;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.reflect.TypeToken;
 import com.sun.org.apache.xerces.internal.impl.dv.util.HexBin;
 import entities.User;
-import org.json.JSONException;
-import org.json.simple.JSONObject;
 import org.json.XML;
+import org.json.simple.JSONObject;
+import repository.UserRepo;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class UserServices {
@@ -28,23 +27,21 @@ public class UserServices {
     public static String TEST_XML_STRING =
             "<?xml version=\"1.0\" ?><test attrib=\"moretest\">Turn this to JSON</test>";
 
-    //read json file
-    private static List<User> readUserFile() throws FileNotFoundException{
-        JsonElement usersJson = new JsonParser().parse(new FileReader("src/main/resources/users.json"));
-        JsonElement userData = usersJson.getAsJsonObject().get("users");
-        List<User> allUsers = new Gson().fromJson(userData, new TypeToken<List<User>>() {
-        }.getType());
-       return allUsers;
+    public static UserRepo repo;
+
+    public UserServices(UserRepo repo){
+        this.repo = repo;
     }
+
 
     // returns a list of all users
     public List<User> getAllUsers() throws FileNotFoundException {
-      return readUserFile();
+      return repo.readUserFile();
 //        return allUsers ;
     }
 
     //encodes password received and compares with password from json file
-    public static boolean validatePassword(String userName, String password) throws NoSuchAlgorithmException, FileNotFoundException {
+    public boolean validatePassword(String userName, String password) throws NoSuchAlgorithmException, FileNotFoundException {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] hash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
         String encoded = Base64.getEncoder().encodeToString(hash);
@@ -54,8 +51,8 @@ public class UserServices {
     }
 
     //find user by user name
-    public static User findUser(String userName) throws FileNotFoundException {
-        List<User> allUsers = readUserFile();
+    public User findUser(String userName) throws FileNotFoundException {
+        List<User> allUsers = repo.readUserFile();
         List<User> result = allUsers.stream()
                 .filter(item -> Objects.equals(item.getUser_name(), userName))
                 .collect(Collectors.toList());
@@ -63,7 +60,7 @@ public class UserServices {
     }
 
     //creates body from json file and encrypts it
-    public static String getEncryptedBody(String userName) throws FileNotFoundException, NoSuchAlgorithmException {
+    public String getEncryptedBody(String userName) throws FileNotFoundException, NoSuchAlgorithmException {
         User user = findUser(userName);
         JSONObject body = new JSONObject();
         body.put("user_name", user.getUser_name());
@@ -81,7 +78,7 @@ public class UserServices {
 
     //encrypts with HMAC the body plus the secret
     public String encriptHMAC(String userName) throws FileNotFoundException, NoSuchAlgorithmException {
-        String key = getEncryptedBody(userName).concat(findUser(userName).getSecret());
+        String key = getEncryptedBody(userName).concat(repo.secret);
         try {
             Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
             SecretKeySpec secret_key = new SecretKeySpec(key.getBytes("UTF-8"), "HmacSHA256");
@@ -131,7 +128,7 @@ public class UserServices {
     }
 
     //verifies what items the user is allowed to buy
-    public static List<String> getItemsCannotBuy(JsonObject body, String userName) throws FileNotFoundException {
+    public List<String> getItemsCannotBuy(JsonObject body, String userName) throws FileNotFoundException {
         User userFromDB = findUser(userName);
         List<String> itemsCannotBuy = new ArrayList<>();
 
@@ -170,7 +167,7 @@ public class UserServices {
     }
 
     //validates conversion token, which is formed by userName.encryptedHMAC
-    public boolean validateConversionToken(String token) throws FileNotFoundException, NoSuchAlgorithmException {
+    public boolean validConversionToken(String token) throws FileNotFoundException, NoSuchAlgorithmException {
         String[] encryptedItems = token.split("\\.");
         String userName = decodeUserName(encryptedItems[0]);
 
@@ -181,13 +178,16 @@ public class UserServices {
 
     //converts xml body to Json
     public static String xmlToJson(String xml){
-        try {
+//        try {
             org.json.JSONObject xmlJSONObj = XML.toJSONObject(xml);
             String jsonPrettyPrintString = xmlJSONObj.toString(PRETTY_PRINT_INDENT_FACTOR);
             return jsonPrettyPrintString;
-        } catch (JSONException je) {
-            return "Error converting xml";
-        }
+//        } catch (JSONException je) {
+//            System.out.println(je);
+//            return je.getMessage();
+//            throw new JSONException("Error converting xml");
+//        }
+        //panic handler - cuando es una excepcion distinta a la que estoy cachando, regrese 500
     }
 
 }

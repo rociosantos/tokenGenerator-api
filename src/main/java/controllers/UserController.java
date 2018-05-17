@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import entities.User;
 import exceptions.UnauthorizedException;
+import org.json.JSONException;
 import services.UserServices;
 
 import static spark.Spark.*;
@@ -15,6 +16,9 @@ public class UserController {
         get("/users", (req, res) ->
              userService.getAllUsers(), json());
 // more routes
+
+        get("/users/:userName", ((request, response) ->
+        userService.findUser(request.params(":userName"))), json());
 
         after((req, res) -> {
             res.type("application/json");
@@ -63,12 +67,20 @@ public class UserController {
         post("/convert", (request, response) -> {
             String token = request.headers("token");
             String body = request.body();
-            boolean validateContentType = request.contentType().equals("application/xml");
+            boolean validContentType = request.contentType().equals("application/xml");
 
-            if (validateContentType) {
-                if (userService.validateConversionToken(token)) {
-                    response.status(200);
-                    response.body(userService.xmlToJson(body));
+            if (validContentType) {
+                if (userService.validConversionToken(token)) {
+                    try{
+                        String convertedBody= userService.xmlToJson(body);
+                        response.status(200);
+                        response.body(convertedBody);
+                    } catch (JSONException je){
+                        System.out.println(je);
+                        response.status(400);
+                        response.body("{\"message\":\"Invalid xml\"}");
+                    }
+
                 } else {
                     response.status(401);
                     response.body("{\"message\":\"Unauthorized\"}");
@@ -77,6 +89,7 @@ public class UserController {
                 response.status(406);
                 response.body("{\"message\":\"Content type is not accepted\"}");
             }
+            //regresar la excepción del error al convertir el xml
             return true;
         });
 

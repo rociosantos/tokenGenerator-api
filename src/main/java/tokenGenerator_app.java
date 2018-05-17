@@ -1,4 +1,5 @@
 import controllers.UserController;
+import repository.UserRepo;
 import services.UserServices;
 
 public class tokenGenerator_app {
@@ -6,6 +7,6 @@ public class tokenGenerator_app {
         //lista de objetos user, mandarselos al constructor
         //inyeccion de dependencias
         //concurrencia - lock
-        new UserController(new UserServices());
+        new UserController(new UserServices(new UserRepo()));
     }
 }
